@@ -28,7 +28,7 @@ urllib3.disable_warnings()
 HEADERS = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:27.0) Gecko/20100101 Firefox/27.0'}
 
 
-class folderMoniter(object):
+class FolderMoniter(object):
     def __init__(self, folder_path):
         self.folder_path = folder_path
 
@@ -57,7 +57,7 @@ class folderMoniter(object):
         return modified_items 
 
 
-class patternRecognizer(object):
+class PatternRecognizer(object):
     def __init__(self, regular_rule):
         self.pattern = re.compile(regular_rule)
 
@@ -80,7 +80,7 @@ class patternRecognizer(object):
         return replace_content
         
 
-class metaExtracter(object):
+class MetaExtracter(object):
     def __init__(self):
         pass 
 
@@ -168,6 +168,7 @@ class metaExtracter(object):
                     year = ' '
                 
                 authors = item.authors
+                summary = item.summary
                 if len(authors) > 0:
                     first_author = authors[0]["name"].split(" ")
                     authors = " and ".join([author["name"] for author in authors])
@@ -176,12 +177,14 @@ class metaExtracter(object):
                     authors = authors
 
                 bib_dict = {
+                    "type": "arxiv",
                     "journal": journal,
                     "url": paper_url,
                     "title": title,
                     "year": year,
                     "author": authors,
-                    "ENTRYTYPE": "article"
+                    "ENTRYTYPE": "article",
+                    "summary": summary,
                 }
 
             return bib_dict 
@@ -189,22 +192,25 @@ class metaExtracter(object):
             logger.info("DOI: {} is error.".format(arxivId))
 
     def id2bib(self, identifier):
-        id_type = self._classify(identifier)
+        # id_type = self._classify(identifier)
+        #
+        # if id_type == "doi":
+        #     bib_dict = self.doi2bib(identifier)
+        # else:
+        #     bib_dict = self.arxivId2bib(identifier)
 
-        if id_type == "doi":
-            bib_dict = self.doi2bib(identifier) 
-        else:
-            bib_dict = self.arxivId2bib(identifier) 
-
+        bib_dict = self.arxivId2bib(identifier)
         return bib_dict
 
 
-class urlDownload(object):
+class UrlDownload(object):
     def __init__(self):
         self.sess = requests.Session()
         self.sess.headers = HEADERS
-        self.available_base_url_list = self._get_available_scihub_urls()
-        self.base_url = self.available_base_url_list[0] + '/'
+        # self.available_base_url_list = self._get_available_scihub_urls()
+        # self.base_url = self.available_base_url_list[0] + '/'
+        self.available_base_url_list = None
+        self.base_url = None
 
     def _get_available_scihub_urls(self):
         '''
@@ -374,12 +380,12 @@ class dropboxInteractor(object):
 
 
 def note_modified(pattern_recog, md_file, **replace_dict):
-    with open(md_file, 'r') as f:
+    with open(md_file, 'r', encoding='utf-8') as f:
         content = f.read()
     
     replaced_content = pattern_recog.multiple_replace(content, **replace_dict)
 
-    with open(md_file, 'w') as f:
+    with open(md_file, 'w', encoding='utf-8') as f:
         f.write(''.join(replaced_content))
 
 
@@ -393,7 +399,7 @@ class attachRemove(object):
         return re.compile(pattern)
 
     def _removed_attachments(self, pattern):
-        with open(self.md_file, 'r') as f:
+        with open(self.md_file, 'r', encoding='utf-8') as f:
             string = f.read()
 
         pattern_rec = self._pattern(pattern)
